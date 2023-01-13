@@ -13,8 +13,8 @@ namespace AgarmeServer.Network
         private Session session;
         public GameServer():base()
         {
-            this.PackHeaderFlag = 0x169;
-            this.MaxPackSize = 0x3FFFFF;
+            this.PackHeaderFlag = 0xff;
+            this.MaxPackSize = 0x7FFFF;
             session = new Session(this);
         }
         public bool ConnectAndStart(string ip, ushort port)
@@ -42,6 +42,7 @@ namespace AgarmeServer.Network
                 Cell.IdGenerator = new IdPool();
                 Program.world_manager.ClearWorld();
                 IsRestart = false;
+                Program.world_manager.world.Start();
                 return this.Start();
             }
             catch (Exception ex)

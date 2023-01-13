@@ -20,39 +20,39 @@ namespace AgarmeServer.Entity
             CountInertia(ref x, ref y, ref xd, ref yd, ServerConfig.VirusSplitSpeedRate);//横向纵向衰减
 
             var r1 = r;
-            var val = world.quadtree.GetObjects(Rect).ToArray();
-            foreach(var cell in val )
-            {
-                var r2 = cell.R;
-                var tempDist = Distance(cell.Cell_Point);
-                if (tempDist > (r1 + r2) * 1.1)
-                    continue;
-                if (cell.Id == Id)
-                    continue;
-                if (cell.Deleted)
-                    continue;
 
-                if (cell.Type is Constant.TYPE_EJECT)
+            world.quadtree.Search(Range, (other) => {
+
+                var r2 = other.R;
+
+                var tempDist = Distance(other.Cell_Point);
+                if (tempDist > (r1 + r2) * 1.1)
+                    return;
+                if (other.Id == Id)
+                    return;
+                if (other.Deleted)
+                    return;
+
+                if (other.Type is Constant.TYPE_EJECT)
                 {
-                    var eject = cell as Eject;
-                    if (tempDist <= r1 - r2 * ServerConfig.CoverageDegree && Size >= cell.Size * ServerConfig.DevourSizeDegree)
+                    var eject = other as Eject;
+                    if (tempDist <= r1 - r2 * ServerConfig.CoverageDegree && Size >= other.Size * ServerConfig.DevourSizeDegree)
                     {
+                        Size += other.Size;
+                        eject.Deleted = true;
                         /*判断病毒是否可以推动*/
                         if (ServerConfig.IsVirusMoved)
                         {
-                            MoveTo(eject.DesLocation , ServerConfig.VirusSplitSpeed, ref transverse, ref longitudinal);
+                            MoveTo(eject.DesLocation, ServerConfig.VirusSplitSpeed, ref transverse, ref longitudinal);
                         }
                         /*病毒达到质量分裂*/
                         if (Size >= ServerConfig.VirusSplitSize)
                         {
-                            Split(eject.DesLocation, ServerConfig.VirusSplitSpeed,world);
+                            Split(eject.DesLocation, ServerConfig.VirusSplitSpeed, world);
                         }
-                        Size += cell.Size;
-                        cell.Deleted = true;
-                        continue;
                     }
                 }
-            }
+            });
         }
 
         public unsafe void Serialize(IWritableBuffer wb,PlayerClient client,ref uint Cells_Length)
@@ -127,8 +127,8 @@ namespace AgarmeServer.Entity
             virus.Type = Constant.TYPE_VIRUS;
             virus.SetID();
             virus.MoveTo(Des, speed, ref virus.transverse, ref virus.longitudinal);
-            virus.FatherCell = this;
-            world.BoostCell.Add(virus);
+            world.quadtree.Insert(virus);
+            world.Cells.Add(virus);
 
         }
 

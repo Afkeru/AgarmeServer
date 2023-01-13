@@ -64,23 +64,27 @@ namespace AgarmeServer.Map
 
         public void ClearWorld()
         {
-            Program.world_manager.world.timer.Stop();
+            Program.world_manager.world.Stop();
 
-           world.PlayerList.Clear();
-           world.CellList.Clear();
+            world.PlayerList.Clear();
 
-            world.quadtree.Clear();
+            world.Cells.Clear();
+
+            world.PlayerCells.Clear();
+
+            world.quadtree= new QuadTree<Cell>(new System.Drawing.RectangleF(0, 0, ServerConfig.BoarderWidth, ServerConfig.BoarderHeight), 16, 16, null); ;
             world.PresentPlayer = 0;
 
             IniEntity();
 
-            world.timer.Start();
+            world.Start();
         }
 
         public void FreshWorld()
         {
-            this.world.CellList.Clear();
-            this.world.quadtree.Clear();
+            world.Cells.Clear();
+            world.PlayerCells.Clear();
+            world.quadtree=new QuadTree<Cell>(new System.Drawing.RectangleF(0, 0, ServerConfig.BoarderWidth, ServerConfig.BoarderHeight), 16, 16, null);
         }
 
         public void IniEntity()

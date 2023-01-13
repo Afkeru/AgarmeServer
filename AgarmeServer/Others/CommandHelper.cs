@@ -25,14 +25,14 @@ namespace AgarmeServer.Others
             {
                 case "stop":
                     {
-                        Program.world_manager.world.timer.Dispose();
+                        Program.world_manager.world.Stop();
                         BindMsg("正在尝试关闭服务器中");
                         Program.server.Stop();        
                         break;
                     }
                 case "restart":
                     {
-                        Program.world_manager.world.timer.Stop();
+                        Program.world_manager.world.Stop();
                         BindMsg("正在尝试重启服务器中");
                         Thread.Sleep(1000);
                         if(Program.server.Restart())

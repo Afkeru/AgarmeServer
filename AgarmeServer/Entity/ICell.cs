@@ -16,7 +16,6 @@ namespace AgarmeServer.Entity
         double Yd { get; set; }
         double Size { get; set; }//质量
         double Speed { get; set; }//移动速度
-        RectangleF Cell_Rect { get;}//包围细胞的最小矩形
         HKColor Color { get; set; }//颜色
         HKPoint Cell_Point { get; }//返回细胞坐标
         byte Type { get; set; }//细胞类型

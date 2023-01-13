@@ -6,9 +6,11 @@ using AgarmeServer.Zeroer;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Reflection;
+
 namespace AgarmeServer.Entity
 {
-    public class Cell : ICell, IQuadStorable
+    public class Cell : ICell, IQuadItem,IComparable<Cell>
     {
         public static IdPool IdGenerator = new IdPool();
         public static uint PresentMaxId = 1;
@@ -44,9 +46,8 @@ namespace AgarmeServer.Entity
         public uint Id { get => id;  set { id = value; } }
         public bool Deleted { get => deleted; set { deleted = value; } }
         public string Name {  get  => name;  set { name = value; } }
-        public HKPoint Cell_Point { get => new HKPoint(this.X, this.Y); }
-        public RectangleF Cell_Rect { get=> new RectangleF((float)(this.x - this.R), (float)(this.y - this.R), (float)this.R * 2, (float)this.R * 2); }
-        public RectangleF Rect => Cell_Rect;
+        public HKPoint Cell_Point { get => new HKPoint(X, this.Y); }
+        public RectangleF Range { get => new RectangleF((float)(this.x - this.R), (float)(this.y - this.R), (float)this.R * 2, (float)this.R * 2);  }
 
         public void MonitorBorderCollide()
         {
@@ -194,22 +195,6 @@ namespace AgarmeServer.Entity
             {
                 case 0:
                     {
-                        HKPoint p = new HKPoint(this.x - Des.x, this.y - Des.y);
-                        double size1 = this.size,size2 = Des.size;
-                        double distance, temp3, tempMoveDistance, sin, cos, xd, yd;
-                        distance = Distance(new HKPoint(Des.x, Des.y));
-                        temp3 = this.r + Des.r - distance;
-                        tempMoveDistance = temp3 * size2 / (size1 + size2) * 1.2;
-                        sin = p.Y / distance;
-                        cos = p.X / distance;
-                        xd = cos * tempMoveDistance * ServerConfig.PlayerCollisionConstant;
-                        yd = sin * tempMoveDistance * ServerConfig.PlayerCollisionConstant;
-                        x += xd;
-                        y += yd;
-                        break;
-                    }
-                case 1:
-                    {
                         var vec = Des.Cell_Point - Cell_Point;
                         var d = vec.CalModule();
                         var dx = vec.X;
@@ -234,6 +219,27 @@ namespace AgarmeServer.Entity
                         y -= dy * Math.Min(m, r) * aM;
                         Des.x += dx * Math.Min(m, Des.r) * bM;
                         Des.y += dy * Math.Min(m, Des.r) * bM;
+                        break;
+                    }
+                case 4:
+                    {
+
+                        break;
+                    }
+                case 1:
+                    {
+                        HKPoint p = new HKPoint(this.x - Des.x, this.y - Des.y);
+                        double size1 = this.size, size2 = Des.size;
+                        double distance, temp3, tempMoveDistance, sin, cos, xd, yd;
+                        distance = Distance(new HKPoint(Des.x, Des.y));
+                        temp3 = this.r + Des.r - distance;
+                        tempMoveDistance = temp3 * size2 / (size1 + size2) * 1.2;
+                        sin = p.Y / distance;
+                        cos = p.X / distance;
+                        xd = cos * tempMoveDistance * ServerConfig.PlayerCollisionConstant;
+                        yd = sin * tempMoveDistance * ServerConfig.PlayerCollisionConstant;
+                        x += xd;
+                        y += yd;
                         break;
                     }
                 case 2:
@@ -300,6 +306,16 @@ namespace AgarmeServer.Entity
             }
         }
 
+        public int CompareTo(Cell other)
+        {
+            if (size < other.size)
+                return 1;
+            else if (size == other.size)
+                return 0;
+            else
+                return -1;
+        }
+
         public string GetTypeStr() =>
             this.type switch
             {
@@ -318,10 +334,12 @@ namespace AgarmeServer.Entity
         public bool IsCollideWith(Cell Des,double distance) => distance <= (this.r + Des.r);
         public bool InRect(RectangleF rect) => this.x - r < rect.X && this.x + r > rect.X + rect.Width && this.y - r < rect.Y && this.y + r> rect.Y + rect.Height;
         public bool InMap() => this.x - r < 0 && this.x + r > ServerConfig.BoarderWidth && this.y - r < 0 && this.y + r > ServerConfig.BoarderHeight;
-        public virtual void PushIntoList(List<Cell> CellList, QuadTree<Cell> Tree) { Tree.Add(this); CellList.Add(this);  }
+        public virtual void PushIntoList(List<Cell> CellList, QuadTree<Cell> Tree) { Tree.Insert(this); CellList.Add(this);  }
         public void ReturnID() { IdGenerator.Return((uint)(this.id - 1)); }
         public void Print() { Console.WriteLine(this); }
         public void SetID() { /*this.id = (IdGenerator.Rent() + 1);*/id = PresentMaxId++; }
         public void Deviation(HKPoint Des, double fuzzyDiviation, double para_r = 0) { MoveTo_ATan(Des, para_r + fuzzyDiviation); }
+
+      
     }
 }

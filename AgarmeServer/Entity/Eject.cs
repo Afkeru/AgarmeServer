@@ -24,48 +24,47 @@ namespace AgarmeServer.Entity
 
         public void Tick(World world)
         {
-            if (Deleted) return;
+            //if (Deleted) return;
 
             CountInertia(ref x, ref y, ref transverse, ref longitudinal, ServerConfig.PlayerEjectSpeedRate);
 
             var r1 = R;
-            if (ServerConfig.EjectCollision)
-            {
-                var val = world.quadtree.GetObjects(Rect).ToArray();
 
-                foreach(var cell in val) 
+            world.quadtree.Search(Range, (other) => {
+
+                if (ServerConfig.EjectCollision)
                 {
+                    if (other.Deleted) return;
 
-                    if (cell.Deleted) continue;
+                    var r2 = other.R;
 
-                    var r2 = cell.R;
-
-                    var tempDist = Distance(cell.Cell_Point);
+                    var tempDist = Distance(other.Cell_Point);
 
 
-                    if (cell.Type is not Constant.TYPE_EJECT) continue;
+                    if (other.Type is not Constant.TYPE_EJECT) return;
 
-                    if (Id == cell.Id) continue;
+                    if (Id == other.Id) return;
 
-                    if (IsCollideWith(cell, tempDist))
+                    if (IsCollideWith(other, tempDist))
                     {
-                        CollideWith(cell);
+                        CollideWith(other);
+                        world.quadtree.Update(this);
                     }
                 }
-            }
 
-            if (ServerConfig.IsClearEject)
-            {
-                if (ClearTimer >= ServerConfig.EjectClearTime)
+                if (ServerConfig.IsClearEject)
                 {
-                    ClearTimer = 0;
-                    Deleted = true;
-                    world.quadtree.Remove(this);
+                    if (ClearTimer >= ServerConfig.EjectClearTime)
+                    {
+                        ClearTimer = 0;
+                        Deleted = true;
+                        world.quadtree.Remove(this);
+                    }
+                    else
+                        ClearTimer += 0.1;
                 }
-                else
-                    ClearTimer += 0.1;
-            }
-            world.quadtree.Move(this);
+
+            });
         }
 
         public unsafe void Serialize(IWritableBuffer wb, PlayerClient client, ref uint Cells_Length)
@@ -133,5 +132,6 @@ namespace AgarmeServer.Entity
         {
             return Math.Abs(transverse) <= 0.1 && Math.Abs(longitudinal) <= 0.1;
         }
+
     }
 }

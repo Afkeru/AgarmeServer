@@ -32,7 +32,7 @@ namespace AgarmeServer
             PrintFrontConsole();
 
             //开始监听
-            world_manager.world.timer.Start();
+            world_manager.world.Start();
 
             ListenThread = new Thread(ListenFunc);
             ListenThread.Start();

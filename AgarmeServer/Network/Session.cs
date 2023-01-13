@@ -25,9 +25,8 @@ namespace AgarmeServer.Network
         unsafe private HandleResult OnReceive(IServer sender, IntPtr connId, byte[] data)
         {
             var key = (uint)connId;
-            var offset = 1;
 
-            if (manager.world.PlayerList.ContainsKey(key) is false) return HandleResult.Ignore;
+            var offset = 1;
 
             var client = manager.world.PlayerList[key];
 
@@ -39,8 +38,6 @@ namespace AgarmeServer.Network
                         {
                             client.Mouce.X = BufferReader.Read<float>(p, ref offset);
                             client.Mouce.Y = BufferReader.Read<float>(p, ref offset);
-                            //if (data[offset++] is 1) client.Split = true;
-                            client.Split = data[offset++] is 1 ? true:false;
                             if (data[offset++] is 1) client.Eject = true;
                             if (data[offset++] is 1) client.PlayerBotSplit = true;
                             if (data[offset++] is 1) client.PlayerBotEject = true;
@@ -49,10 +46,27 @@ namespace AgarmeServer.Network
                     case 138:
                         {
                             int len = BufferReader.Read<ushort>(p, ref offset);
-                            string msg = client.Name + ":" + BufferReader.ReadStr(data, len, ref offset);
+
+                            var receive =BufferReader.ReadStr(data, len, ref offset);
+                            
+                            if (receive.ToLower().Trim() is "macro") //macro
+                            {
+                                client.Macro = !client.Macro;
+                                receive = client.Macro ? "Macro enabled successfully" : "Macro disable successfully";
+                            }
+
+                            var msg = client.Name + ":" + receive;
 
                             client.Send(BufferWriter.WritePackage(139, BufferWriter.WriteString(msg)));
 
+                            break;
+                        }
+                    case 149:
+                        {
+                            client.Tab = !client.Tab;
+                            if(client.Tab) client.LastMouceLoc = client.Mouce;
+                            else if(client.MyMinion is not null)
+                                client.MyMinion.LastMouceLoc = client.Mouce;
                             break;
                         }
                     case 166:
@@ -63,9 +77,16 @@ namespace AgarmeServer.Network
                             if (client.State is ClientState.Connected)
                             {
                                 client.State = ClientState.Playing;
+                                client.Die = false;
                                 client.Send(new byte[] { 144 });
                                 CellCreator.Generate_Player(client, manager.world);
                             }
+                            break;
+                        }
+                    case 150:
+                        {
+                            client.SplitQueue.Enqueue(1);
+                            client.SplitAttempts++;
                             break;
                         }
                 }
@@ -84,7 +105,7 @@ namespace AgarmeServer.Network
         {
             Console.WriteLine($"ID为：{connId}的玩家加入了服务器");
 
-            PlayerClient temp = new PlayerClient(connId, manager.world) { BT = PlayerClient.MaxBT++ };
+            PlayerClient temp = new PlayerClient(connId, manager.world) { BT = (uint)connId};
 
             //if()
             //{
