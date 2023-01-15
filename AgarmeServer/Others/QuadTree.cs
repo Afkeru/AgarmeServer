@@ -160,7 +160,9 @@ namespace AgarmeServer.Others
             T item;
             for (int i = 0; i < items.Count; i++)
             {
-                if (Misc.Intersects(range, (item = items[i]).Range))
+                if (items[i] is null)
+                    continue;
+;                if (Misc.Intersects(range, (item = items[i]).Range))
                     callback(item);
             }
             if (!hasSplit)

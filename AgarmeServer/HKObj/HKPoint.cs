@@ -21,10 +21,9 @@ namespace AgarmeServer.HKObj
         public static HKPoint operator +(HKPoint Val1, HKPoint Val2)=> new HKPoint(Val1.X + Val2.X, Val1.Y + Val2.Y);
         public static HKPoint operator -(HKPoint Val1, HKPoint Val2) => new HKPoint(Val1.X - Val2.X, Val1.Y - Val2.Y);
         public static HKPoint operator *(HKPoint Val1, HKPoint Val2) => new HKPoint(Val1.X * Val2.X, Val1.Y * Val2.Y);
-        public static HKPoint operator *(HKPoint Val1, double Val2) => new HKPoint(Val1.X * Val2, Val1.Y * Val2);
+        public static HKPoint operator *(HKPoint Val1, double Val) => new HKPoint(Val1.X * Val, Val1.Y * Val);
         public static HKPoint operator /(HKPoint Val1, HKPoint Val2) => new HKPoint(Val1.X / Val2.X, Val1.Y / Val2.Y);
         public static HKPoint operator /(HKPoint Val1, double Val2) => new HKPoint(Val1.X / Val2, Val1.Y / Val2);
-
 
         //求该点的长度
         public double CalModule()=> Math.Sqrt(this.X * this.X + this.Y * this.Y);
@@ -40,5 +39,8 @@ namespace AgarmeServer.HKObj
 
         //隐式转换成pointF类型(会丢失精度)
         public static unsafe implicit operator PointF(HKPoint Des) => new PointF((float)Des.X, (float)Des.Y);
+
+        //求关于某点的对称点
+        public HKPoint Symmetry(HKPoint center) => center * 2 - this;
     }
 }

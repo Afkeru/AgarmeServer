@@ -3,6 +3,7 @@ using AgarmeServer.HKObj;
 using AgarmeServer.Others;
 using AgarmeServer.Map;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 
 namespace AgarmeServer.Client
 {
@@ -10,8 +11,7 @@ namespace AgarmeServer.Client
     {
         public string Name { set; get; } = "";//名称
         public double Mass { set; get; } = 0;//所有细胞质量和
-        public HKPoint DeathLoc { set; get; } = new HKPoint();//死亡坐标
-        public HKPoint LastMouceLoc { set; get; }//上一次的鼠标坐标
+        public HKPoint DeathLoc { set; get; } = new();//死亡坐标
         public int[] ArrayCount = new int[5];//记录发送到客户端出去的各个细胞类型的数量
         public RectangleF NewRect { set; get; }//新视野
         public RectangleF OldRect { set; get; }//旧视野
@@ -22,6 +22,7 @@ namespace AgarmeServer.Client
         public double ViewX { set; get; }//所有细胞横坐标之和
         public double ViewY { set; get; }//所有细胞纵坐标之和
         public double MergeTick { set; get; }//融合计时
+        public double CurrentBiggestSize { set; get; }//当前帧最大细胞的质量
         public int SplitCount { get; set; }//用于发送的细胞总数量
         public int SplitAttempts { get; set; }//按下分裂的次数
         public int LastSplitCount { get; set; }//上一次分裂数量
@@ -29,8 +30,10 @@ namespace AgarmeServer.Client
         public bool Deleted { get; set; }//是否将被删除
         public bool Focus { get; set; }//是否有焦点
         public bool Die { get; set; } = true;//是否死亡
+        public Cell CurrentBiggestCell { get; set; } = new();
         public HKRectD ViewArea { set; get; } = new HKRectD(0, 0, 0, 0);
-        public Dictionary<uint, Cell> OwnCells = new Dictionary<uint, Cell>();
+        public Dictionary<uint, Cell> OwnCells = new();
+        public Queue<byte> SplitQueue = new();
 
         //指定算法生成视野宽度和高度
         public void SetSightWH(MinionClient minion)
@@ -81,6 +84,7 @@ namespace AgarmeServer.Client
             b = ServerConfig.SpectateHeight * s;
             return new RectangleF((float)(AverageViewX - a), (float)(AverageViewY - b), (float)(AverageViewX + a), (float)(AverageViewY + b));
         }
+
         public static PlayerClient SearchPlayer(World world, uint bt) => world.PlayerList.ContainsKey(bt) ? world.PlayerList[bt] : null;
         public bool CheckInRect(Cell val, HKRectD aa) => val.X >= aa.X && val.X <= aa.X + aa.Width && val.Y >= aa.Y && val.Y <= aa.Y + aa.Height;
         public bool CheckOutInSight(Cell val) => CheckInRect(val, ViewArea);
@@ -88,6 +92,6 @@ namespace AgarmeServer.Client
         public bool SplitCheck() => SpaceCount + LastSplitCount <= ServerConfig.PlayerSplitLimit;
         public int GetRestSplitCount() => ServerConfig.PlayerSplitLimit - SpaceCount - LastSplitCount;
         public RectangleF GetViewRect() => new RectangleF((float)(AverageViewX - SightWidth), (float)(AverageViewY - SightHeight), (float)(SightWidth * 2), (float)(SightHeight * 2));
-        //public bool CheckAlive() => Mass is >0 && OwnCells.Count is > 0;
+        public bool UpdateBiggestCell(Cell cell) {var val = cell.Size > CurrentBiggestSize; if (val) { CurrentBiggestSize = cell.Size; CurrentBiggestCell = cell; } ;return val; }
     }
 }

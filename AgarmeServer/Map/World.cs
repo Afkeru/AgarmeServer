@@ -33,14 +33,16 @@ namespace AgarmeServer.Map
         public bool running = false;
         private float FoodTick = 0;
 
-        public List<Cell> BoostCell = new List<Cell>();
-        public List<uint> BtList = new List<uint>();
-        public QuadTree<Cell> quadtree = new QuadTree<Cell>(new System.Drawing.RectangleF(0,0,ServerConfig.BoarderWidth,ServerConfig.BoarderHeight),16, 16, null);
-        public Dictionary<uint,PlayerClient> PlayerList = new Dictionary<uint, PlayerClient>();
-        public List<Cell> Cells = new List<Cell>();
-        public List<Cell> PlayerCells = new List<Cell>();
+        public List<Cell> BoostCell = new();
+        public List<uint> BtList = new();
+        public List<Cell> Cells = new();
+        public List<Player> PlayerCells = new();
+        public List<Minion> BotCells = new();
+        public QuadTree<Cell> quadtree = new QuadTree<Cell>(new System.Drawing.RectangleF(0,0,ServerConfig.BoarderWidth,ServerConfig.BoarderHeight),32, 16, null);
+        public Dictionary<uint,PlayerClient> PlayerList = new();
         public Ticker ticker = new Ticker(40);
-        private Stopwatch stopWatch = new Stopwatch();
+        private Stopwatch stopWatch = new();
+        private Queue<Cell> DeleteList = new();
 
 
         public World()
@@ -54,7 +56,6 @@ namespace AgarmeServer.Map
             ticker.step = tickDelay;
             stepMult = tickDelay / 40;
             ticker.Add(Tick);
-
         }
 
         public bool Start()
@@ -89,36 +90,14 @@ namespace AgarmeServer.Map
 
             var r2 = 0.0d;
 
-            var leng = PlayerCells.Count;
-
-            for (int i = 0; i < leng; i++)
+            BoostCells();
+            //遍历其他细胞
+            Parallel.For(0, Cells.Count, (i, state) =>
             {
-                var player = PlayerCells[i] as Player;
-
-                if (player.Client.Deleted)
-                {
-                    player.Name = "Dead";
-                    player.Deleted = true;
-                    player.color_index = 112;
-                    player.Transverse = 0;
-                    player.Longitudinal = 0;
-                }
-                player.MonitorBorderCollide();
-
-                player.Tick(this);
-
-            }
-
-            var len = Cells.Count;
-            for (var i = 0; i < len; i++)
-            {
-                Cell cell = Cells[i];
-
+                var cell = Cells[i];
                 r1 = cell.R;
 
-                #region 细胞与边界碰撞
                 cell.MonitorBorderCollide();
-                #endregion
 
                 #region 细胞逻辑处理
                 //食物
@@ -148,34 +127,52 @@ namespace AgarmeServer.Map
                 if (cell.Type is Constant.TYPE_BOT)
                 {
                     var minion = cell as Minion;
-
                     minion.Tick(this);
                 }
 
                 //人机
                 if (cell.Type is Constant.TYPE_ROBOT)
                 {
-
                 }
                 #endregion
+            });
+
+            //遍历玩家的人机
+            var bot_cells = BotCells.ToArray();
+            if (ServerConfig.IsSolotrick)
+                Array.Sort(bot_cells);
+            for(var i= bot_cells.Length-1; i >= 0; --i)
+            {
+                var minion = bot_cells[i];
+
+                if (minion.Client.Parent.Deleted)
+                {
+                    if (ServerConfig.IsClearPlayer)
+                    {
+                        if (minion.Deleted_Clear_Tick < ServerConfig.PlayerClearTime)
+                            minion.Deleted_Clear_Tick++;
+                        else
+                        {
+                            minion.Name = "Dead";
+                            minion.Deleted = true;
+                            minion.color_index = 112;
+                            minion.Transverse = 0;
+                            minion.Longitudinal = 0;
+                            minion.Deleted_Clear_Tick = 0;
+                        }
+                    }
+                }
+                minion.MonitorBorderCollide();
+
+                minion.Tick(this);
             }
 
+            //处理玩家和客户组
             HandlePlayer();
 
+            DeleteCells();
+
             UpdateFoodAndVirus();
-
-            HandleCells();
-
-            var keys = PlayerList.Keys.ToArray();
-            for (int i = 0, l = keys.Length; i < l; i++)
-            {
-                PlayerClient client = PlayerList[keys[i]];
-
-                //if (client.Deleted) { PlayerList.Remove(client.BT); }
-                //if (client is null) { PlayerList.Remove(client.BT); }
-
-                if (client.SplitQueue.Count is not 0) client.SplitQueue.Dequeue();
-            }
 
             avargateTickTime = stopWatch.Elapsed.TotalMilliseconds;
             stopWatch.Reset();
@@ -184,16 +181,21 @@ namespace AgarmeServer.Map
         private void UpdateFoodAndVirus()
         {
             ////刷新病毒
-            if (VirusAmount < ServerConfig.AVirus)
+            while(VirusAmount < ServerConfig.AVirus)
+            {
                 CellCreator.Generate_Virus(1, this);
+                VirusAmount++;
+            }
 
             //刷新食物
-            if (FoodAmount < ServerConfig.AFood)
+            while(FoodAmount < ServerConfig.AFood)
             {
                 if (FoodTick >= ServerConfig.FoodAppearsCounter)
                 {
                     CellCreator.Generate_Food(ServerConfig.FoodAppearsAmount, this);
                     FoodTick = 0;
+                    FoodAmount++;
+                    break;
                 }
                 else FoodTick++;
             }
@@ -203,59 +205,90 @@ namespace AgarmeServer.Map
 
         }
 
-        private void HandleCells()
+        private void BoostCells()
         {
-            for (int i = 0; i < BoostCell.Count;)
+            for (int i = 0; i < BoostCell.Count; ++i)
             {
                 var cell = BoostCell[i];
-
-                if (cell.Type is Constant.TYPE_PLAYER) PlayerCells.Add(cell);
-                else Cells.Add(cell);
-
+                switch (cell.Type)
+                {
+                    case Constant.TYPE_PLAYER:
+                        {
+                            PlayerCells.Add(cell as Player);
+                            break;
+                        }
+                    case Constant.TYPE_BOT:
+                        {
+                            BotCells.Add(cell as Minion);
+                            break;
+                        }
+                    default:
+                        {
+                            Cells.Add(cell);
+                            break;
+                        }
+                }
                 quadtree.Insert(cell);
-
-                i++;
             }
             BoostCell.Clear();
+        }
 
+        private void DeleteCells()
+        {
             for (int i = Cells.Count-1; i >=0; i--)
             {
                 Cell cell = Cells[i];
 
-                if(cell is null) continue; 
-
                 if (cell.Deleted)
                 {
-                    switch (cell.Type)
-                    {
-                        case Constant.TYPE_BOT:
-                            {
-                                var minion = cell as Minion;
-                                minion.Client.OwnCells.Remove(minion.Id);
-                                break;
-                            }
-                        default:
-                            {
-                                break;
-                            }
-                    }
-
-                    Cells.RemoveAt(i);
+                    cell.ReturnID();
+                    cell.Id = 0;
+                    Cells.Remove(cell);
                     quadtree.Remove(cell);
+                    if(cell.Type==Constant.TYPE_FOOD)
+                        ((Food)cell).Dispose();
+                    if (cell.Type == Constant.TYPE_EJECT)
+                        ((Eject)cell).Dispose();
+                    if (cell.Type == Constant.TYPE_VIRUS)
+                        ((Virus)cell).Dispose();
                 }
 
             }
+
             for (int i = PlayerCells.Count - 1; i>=0; i--)
             {
-                var player = PlayerCells[i] as Player;
+                var player = PlayerCells[i];
 
                 if (player is null) continue;
 
+
                 if (player.Deleted)
                 {
+                    player.ReturnID();
                     player.Client.OwnCells.Remove(player.Id);
+                    player.Id = 0;
                     PlayerCells.RemoveAt(i);
                     quadtree.Remove(player);
+                    player.Dispose();
+                    //player = null;
+                }
+            }
+
+            for (int i = BotCells.Count - 1; i >= 0; i--)
+            {
+                var minion = BotCells[i];
+
+                if (minion is null) continue;
+
+                if (minion.Deleted)
+                {
+                    minion.ReturnID();
+                    minion.Client.OwnCells.Remove(minion.Id);
+                    minion.Id = 0;
+                    BotCells.RemoveAt(i);
+                    quadtree.Remove(minion);
+                    minion.Dispose();
+                    //minion = null;
                 }
             }
         }
@@ -267,8 +300,35 @@ namespace AgarmeServer.Map
             {
                 PlayerClient client = PlayerList[keys[i]];
 
-                if (client.Deleted) { PlayerList.Remove(client.BT); }
-                if (client is null) { PlayerList.Remove(client.BT); }
+                if (client is null) { PlayerList.Remove(client.BT);continue; }
+                if (client.Deleted) { PlayerList.Remove(client.BT);continue; }
+
+                var player_cells = client.OwnCells.Values.ToArray();
+                if(ServerConfig.IsSolotrick) 
+                    Array.Sort(player_cells);
+                for (int j= player_cells.Length-1; j>=0;--j)
+                {
+                    var player = player_cells[j] as Player;
+                    if (client.Deleted)
+                    {
+                        if (ServerConfig.IsClearPlayer)
+                        {
+                            if (player.Deleted_Clear_Tick < ServerConfig.PlayerClearTime)
+                                player.Deleted_Clear_Tick++;
+                            else
+                            {
+                                player.Name = "Dead";
+                                player.Deleted = true;
+                                player.color_index = 112;
+                                player.Transverse = 0;
+                                player.Longitudinal = 0;
+                            }
+                        }
+                    }
+                    player.MonitorBorderCollide();
+
+                    player.Tick(this);
+                }
 
                 client.Tick(this);
             }

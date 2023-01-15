@@ -9,9 +9,9 @@ using System.Collections.Generic;
 
 namespace AgarmeServer.Entity
 {
-    public class Virus:Cell
+    public class Virus:Cell,IDisposable
     {
-        public List<uint> Sended = new List<uint>(3);
+        public List<uint> Sended = new();
         public void Tick(World world)
         {
             if (Deleted) return;
@@ -67,8 +67,8 @@ namespace AgarmeServer.Entity
                         wb.Write((byte)1);
                         wb.Write((ushort)x);
                         wb.Write((ushort)y);
-                        wb.Write((float)r);
-                        wb.Write(Id);
+                        wb.Write((ushort)r);
+                        wb.Write((ushort)Id);
                         Sended.Add(client.BT);
                         Cells_Length++;
                     }
@@ -79,8 +79,8 @@ namespace AgarmeServer.Entity
                     wb.Write((byte)0);
                     wb.Write((ushort)x);
                     wb.Write((ushort)y);
-                    wb.Write((float)r);
-                    wb.Write(Id);
+                    wb.Write((ushort)r);
+                    wb.Write((ushort)Id);
                     Cells_Length++;
                 }
             }
@@ -94,8 +94,8 @@ namespace AgarmeServer.Entity
                         wb.Write((byte)0);
                         wb.Write((ushort)x);
                         wb.Write((ushort)y);
-                        wb.Write((float)r);
-                        wb.Write(Id);
+                        wb.Write((ushort)r);
+                        wb.Write((ushort)Id);
                         Cells_Length++;
                     }
                     else
@@ -106,8 +106,8 @@ namespace AgarmeServer.Entity
                             wb.Write((byte)1);
                             wb.Write((ushort)x);
                             wb.Write((ushort)y);
-                            wb.Write((float)r);
-                            wb.Write(Id);
+                            wb.Write((ushort)r);
+                            wb.Write((ushort)Id);
                             Cells_Length++;
                         }
                     }
@@ -130,6 +130,11 @@ namespace AgarmeServer.Entity
             world.quadtree.Insert(virus);
             world.Cells.Add(virus);
 
+        }
+
+        public void Dispose()
+        {
+            Sended = null;
         }
 
         public bool IsStatic() => Math.Abs(transverse) is <= 0.1 && Math.Abs(longitudinal) is <= 0.1;

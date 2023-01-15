@@ -30,7 +30,7 @@ namespace AgarmeServer.Entity
         void ReturnID();//为该细胞设置ID身份证
         void SetRandomColor(byte methond);//设置随机颜色
         void MonitorBorderCollide();//检查与地图边界碰撞
-        void Eat(Cell eater,Cell eated,World world);//吞噬细胞
+        void Eat(Cell eated);//吞噬细胞
         double Distance(HKPoint Des);//取细胞到定点距离
         bool InRect(RectangleF rect);//细胞是否在指定矩形边界内
         bool InMap();//细胞是否在地图边界内

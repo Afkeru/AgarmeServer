@@ -16,12 +16,11 @@ namespace AgarmeServer.Others
         private readonly Stopwatch stopWatch = Stopwatch.StartNew();
         private readonly long[] averageTicks = new long[24];
         public bool ticksFilled = false;
-        private long tickPos;
         public Ticker(int step) =>
             this.step = step  * 10_000;
         public long ServerTimeInMilliseconds => stopWatch.ElapsedMilliseconds;
         public long TotalDormancyInMilliseconds => compensatedMS;
-        private long compensatedMS;
+        private long compensatedMS=0;
         /// <summary>
         /// Add action for a tick
         /// </summary>

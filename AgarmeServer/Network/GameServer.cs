@@ -13,8 +13,8 @@ namespace AgarmeServer.Network
         private Session session;
         public GameServer():base()
         {
-            this.PackHeaderFlag = 0xff;
-            this.MaxPackSize = 0x7FFFF;
+            this.PackHeaderFlag = 0;
+            this.MaxPackSize = 0x3FFFFF;
             session = new Session(this);
         }
         public bool ConnectAndStart(string ip, ushort port)

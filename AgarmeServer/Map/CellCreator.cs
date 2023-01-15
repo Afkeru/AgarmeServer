@@ -1,4 +1,4 @@
-﻿using System;
+﻿                                                                                    using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
@@ -29,7 +29,6 @@ namespace AgarmeServer.Map
                 food.Name = "";
                 //设置细胞类型
                 food.Type = Constant.TYPE_FOOD;
-                food.FatherCell = null;
 
                 world.Cells.Add(food);
                 world.quadtree.Insert(food);
@@ -55,7 +54,6 @@ namespace AgarmeServer.Map
                 virus.Name = "";
                 //设置细胞类型
                 virus.Type = Constant.TYPE_VIRUS;
-                virus.FatherCell = null;
 
                 world.Cells.Add(virus);
                 world.quadtree.Insert(virus);
@@ -74,6 +72,8 @@ namespace AgarmeServer.Map
             player.Type = Constant.TYPE_PLAYER;
             //初始质量
             player.Size = ServerConfig.PlayerStartSize;
+
+            client.UpdateBiggestCell(player);
 
             player.CollisionC = ServerConfig.PlayerCollisionTime * 0.9;
 
@@ -98,17 +98,19 @@ namespace AgarmeServer.Map
             //初始质量
             player.Size = size;
 
+            client.UpdateBiggestCell(player);
+
             player.FusionC = 0;
 
             client.OwnCells.Add(player.Id, player);
 
             player.CollisionC = ServerConfig.PlayerCollisionTime * 0.9;
 
-            world.BoostCell.Add(player);
+            //world.BoostCell.Add(player);
 
-            //world.PlayerCells.Add(player);
+            world.PlayerCells.Add(player);
 
-            //world.quadtree.Insert(player);
+            world.quadtree.Insert(player);
 
             return player;
         }
@@ -117,8 +119,18 @@ namespace AgarmeServer.Map
         {
             Player player = new Player(client);
             //出生点
-            player.X = HKRand.Double(client.MyMinion.AverageViewX - 50 * 0.5, client.MyMinion.AverageViewX + 50 * 0.5);
-            player.Y = HKRand.Double(client.MyMinion.AverageViewY - 50 * 0.5, client.MyMinion.AverageViewY + 50 * 0.5);
+            if(client.MyMinion is null)
+            {
+                player.X = HKRand.Double(client.MyMinion.AverageViewX - ServerConfig.ReLiveWidth * 0.5, client.MyMinion.AverageViewX + ServerConfig.ReLiveWidth * 0.5);
+                player.Y = HKRand.Double(client.MyMinion.AverageViewY - ServerConfig.ReLiveHeight * 0.5, client.MyMinion.AverageViewY + ServerConfig.ReLiveHeight * 0.5);
+            }
+            else
+            {
+                var index = client.MyMinion.OwnCells.Count is 1?0:HKRand.Int(0, client.MyMinion.OwnCells.Count-1);
+                var cell = client.MyMinion.OwnCells.ElementAt(index).Value;
+                player.X = HKRand.Double(cell.x - ServerConfig.ReLiveWidth * 0.5 * 0.5, cell.x + ServerConfig.ReLiveWidth * 0.5 * 0.5);
+                player.Y = HKRand.Double(cell.y - ServerConfig.ReLiveHeight * 0.5, cell.y + ServerConfig.ReLiveHeight * 0.5);
+            }
             //方案二随机生成颜色
             player.SetRandomColor(1);
 
@@ -126,12 +138,14 @@ namespace AgarmeServer.Map
             //初始质量
             player.Size = ServerConfig.PlayerStartSize;
 
+            client.UpdateBiggestCell(player);
+
             player.CollisionC = ServerConfig.PlayerCollisionTime * 0.9;
 
-            world.BoostCell.Add(player);
-            //world.PlayerCells.Add(player);
+            //world.BoostCell.Add(player);
+            world.PlayerCells.Add(player);
 
-            //world.quadtree.Insert(player);
+            world.quadtree.Insert(player);
 
             client.OwnCells.Add(player.Id, player);
 
@@ -141,8 +155,10 @@ namespace AgarmeServer.Map
         {
             Minion minion = new Minion(client);
             //出生点
-            minion.X = HKRand.Double(client.Parent.AverageViewX-350*0.5, client.Parent.AverageViewX + 350 * 0.5);
-            minion.Y = HKRand.Double(client.Parent.AverageViewY - 350 * 0.5, client.Parent.AverageViewY+ 350 * 0.5);
+            var index = client.Parent.OwnCells.Count is 1 ? 0 : HKRand.Int(0, client.Parent.OwnCells.Count - 1);
+            var cell = client.Parent.OwnCells.ElementAt(index).Value;
+            minion.X = HKRand.Double(cell.x - ServerConfig.ReLiveWidth * 0.5 * 0.5, cell.x + ServerConfig.ReLiveWidth * 0.5 * 0.5);
+            minion.Y = HKRand.Double(cell.y - ServerConfig.ReLiveHeight * 0.5, cell.y + ServerConfig.ReLiveHeight * 0.5);
             //方案二随机生成颜色
             minion.SetRandomColor(1);
 
@@ -150,13 +166,15 @@ namespace AgarmeServer.Map
             //初始质量
             minion.Size = ServerConfig.MinionMass;
 
+            client.UpdateBiggestCell(minion);
+
             minion.CollisionC = ServerConfig.PlayerCollisionTime * 0.9;
 
-            //world.Cells.Add(minion);
+            world.BotCells.Add(minion);
 
-            //world.quadtree.Insert(minion);
+            world.quadtree.Insert(minion);
 
-            world.BoostCell.Add(minion);
+            //world.BoostCell.Add(minion);
 
             client.OwnCells.Add(minion.Id, minion);
 
@@ -175,17 +193,19 @@ namespace AgarmeServer.Map
             //初始质量
             minion.Size = size;
 
+            client.UpdateBiggestCell(minion);
+
             minion.FusionC = 0;
 
             client.OwnCells.Add(minion.Id, minion);
 
-            //world.Cells.Add(minion);
+            world.BotCells.Add(minion);
 
-            //world.quadtree.Insert(minion);
+            world.quadtree.Insert(minion);
 
             minion.CollisionC = ServerConfig.PlayerCollisionTime * 0.9;
 
-            world.BoostCell.Add(minion);
+            //world.BoostCell.Add(minion);
 
             return minion;
         }

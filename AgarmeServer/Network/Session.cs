@@ -6,12 +6,15 @@ using AgarmeServer.Entity;
 using AgarmeServer.HKObj;
 using AgarmeServer.Map;
 using HPSocket;
+using IClient = AgarmeServer.Client.IClient;
+
 namespace AgarmeServer.Network
 {
     public class Session
     {
         private GameServer server;
         private MatchManager manager;
+        private long t1=0,t2=0;
         public Session(GameServer arg)
         {
             server = arg;
@@ -22,8 +25,11 @@ namespace AgarmeServer.Network
             server.OnClose += new ServerCloseEventHandler(OnClose);
             server.OnShutdown += new ServerShutdownEventHandler(OnShutDown);
         }
+
         unsafe private HandleResult OnReceive(IServer sender, IntPtr connId, byte[] data)
         {
+            t1 = (System.DateTime.UtcNow.Ticks - Jan1st1970Ms) / 10000;
+
             var key = (uint)connId;
 
             var offset = 1;
@@ -39,8 +45,6 @@ namespace AgarmeServer.Network
                             client.Mouce.X = BufferReader.Read<float>(p, ref offset);
                             client.Mouce.Y = BufferReader.Read<float>(p, ref offset);
                             if (data[offset++] is 1) client.Eject = true;
-                            if (data[offset++] is 1) client.PlayerBotSplit = true;
-                            if (data[offset++] is 1) client.PlayerBotEject = true;
                             break;
                         }
                     case 138:
@@ -64,9 +68,9 @@ namespace AgarmeServer.Network
                     case 149:
                         {
                             client.Tab = !client.Tab;
-                            if(client.Tab) client.LastMouceLoc = client.Mouce;
-                            else if(client.MyMinion is not null)
-                                client.MyMinion.LastMouceLoc = client.Mouce;
+                            //if(client.Tab) client.LastMouceLoc = client.Mouce;
+                            //else if(client.MyMinion is not null)
+                            //    client.MyMinion.LastMouceLoc = client.Mouce;
                             break;
                         }
                     case 166:
@@ -85,8 +89,40 @@ namespace AgarmeServer.Network
                         }
                     case 150:
                         {
-                            client.SplitQueue.Enqueue(1);
-                            client.SplitAttempts++;
+                            IClient client_ = !client.Tab ? client : client.MyMinion;
+                            if(client_ is not null)
+                            {
+                                switch (data[1])
+                                {
+                                    case 0:
+                                        {
+                                            client_.SplitAttempts++;
+                                            break;
+                                        }
+                                    case 1:
+                                        {
+                                            client_.SplitAttempts+=1;
+                                            break;
+                                        }
+                                    case 2:
+                                        {
+                                            client_.SplitAttempts+=3;
+                                            break;
+                                        }
+                                    default:
+                                        break;
+                                }
+                            }
+                            break;
+                        }
+                    case 255:
+                        {
+                            var bytes = new byte[17];
+                            BufferWriter.WriteUnmanaged<byte>(255, bytes, 0);
+                            BufferWriter.WriteUnmanaged(t1, bytes, 1);
+                            t2 = (System.DateTime.UtcNow.Ticks - Jan1st1970Ms) / 10000;
+                            BufferWriter.WriteUnmanaged(t2, bytes, 9);
+                            server.Send(connId, bytes, bytes.Length);
                             break;
                         }
                 }
@@ -130,5 +166,6 @@ namespace AgarmeServer.Network
         }
         private HandleResult OnPrepareListen(IServer sender, IntPtr listen)=>HandleResult.Ok;
         private HandleResult OnShutDown(IServer sender)=>HandleResult.Ok;
+        public long Jan1st1970Ms = new System.DateTime(1970, 1, 1, 0, 0, 0, System.DateTimeKind.Utc).Ticks;
     }
 }

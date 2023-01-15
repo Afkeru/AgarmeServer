@@ -19,5 +19,6 @@ namespace AgarmeServer.Client
             AverageViewX = HKRand.Double(0, ServerConfig.BoarderWidth);
             AverageViewY = HKRand.Double(0, ServerConfig.BoarderHeight);
         }
+        public void OnDead() { Die = true; Parent.Tab = false; Focus = false; Mass = 0; SpaceCount = 0; SplitCount = 0; ViewX = 0; ViewY = 0; ViewArea = new HKRectD(0, 0, 0, 0); }
     }
 }

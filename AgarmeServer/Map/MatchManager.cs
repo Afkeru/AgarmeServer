@@ -5,6 +5,7 @@ using System.Threading;
 using AgarmeServer.Client;
 using AgarmeServer.Entity;
 using AgarmeServer.Others;
+using HPSocket.Base;
 
 namespace AgarmeServer.Map
 {
@@ -44,6 +45,13 @@ namespace AgarmeServer.Map
             if (world.PlayerList.ContainsKey(bt) is false) { return false; }
 
             PlayerClient player_client = world.PlayerList[bt];
+
+            var client_keys = player_client.OwnCells.Keys.ToArray();
+            for (var i=0;i < client_keys.Length;++i)
+            {
+                var player = player_client.OwnCells[client_keys[i]];
+                player.Deleted = true;
+            }
 
             player_client.OwnCells.Clear();
 

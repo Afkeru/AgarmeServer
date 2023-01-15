@@ -11,9 +11,9 @@ using System.Threading.Tasks;
 namespace AgarmeServer.Entity
 {
     //食物好像没啥好写的唉
-    public class Food : Cell
+    public class Food : Cell,IDisposable
     {
-        public List<uint> Sended = new List<uint>(3);
+        public List<uint> Sended = new();
 
         public Food() { }
 
@@ -33,7 +33,7 @@ namespace AgarmeServer.Entity
                     *(ushort*)wb.WriteUndefined(2) = (ushort)X;
                     *(ushort*)wb.WriteUndefined(2) = (ushort)Y;
                     *(byte*)wb.WriteUndefined(1) = (byte)R;
-                    *(uint*)wb.WriteUndefined(4) = Id;
+                    *(ushort*)wb.WriteUndefined(2) = (ushort)Id;
                     Sended.Add(client.BT);
                 }
                 else
@@ -44,12 +44,17 @@ namespace AgarmeServer.Entity
                         *(ushort*)wb.WriteUndefined(2) = (ushort)X;
                         *(ushort*)wb.WriteUndefined(2) = (ushort)Y;
                         *(byte*)wb.WriteUndefined(1) = (byte)R;
-                        *(uint*)wb.WriteUndefined(4) = Id;
+                        *(ushort*)wb.WriteUndefined(2) = (ushort)Id;
                         Sended.Add(client.BT);
                     }
                 }
                 len++;
             }
+        }
+
+        public void Dispose()
+        {
+            Sended = null;
         }
     }
 }

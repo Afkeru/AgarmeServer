@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgarmeServer.Entity;
+using System;
 using System.Text;
 
 namespace AgarmeServer.Others
@@ -36,9 +37,28 @@ namespace AgarmeServer.Others
                         BindMsg("正在尝试重启服务器中");
                         Thread.Sleep(1000);
                         if(Program.server.Restart())
+                        {
                             BindMsg("重启服务器成功");
+                        }
                         else
                             BindMsg("正在尝试重启服务器失败");
+                        break;
+                    }
+                case "startsize":
+                    {
+                        if (strArray.Length <= 1)
+                        {
+                            BindMsg("参数填写错误");
+                            break;
+                        }
+                        double result;
+                        if (!double.TryParse(strArray[1], out result))
+                        {
+                            BindMsg("参数填写错误");
+                            break;
+                        }
+                        ServerConfig.PlayerStartSize = result;
+                        BindMsg($"成功将初始质量设置成：{result}");
                         break;
                     }
                 case "kick":
@@ -106,7 +126,12 @@ namespace AgarmeServer.Others
                     {
                         Console.ForegroundColor = ConsoleColor.DarkBlue;
                         Console.WriteLine("\n\t\t\tAgarme Help Command\n\tStop:停止服务器\n\tMass (PlayerId) (mass):赋予指定ID的细胞质量\n\tConsole (string):调试输出一个指定的文本\n\t" +
-                       "Stop:关闭服务器\n\tRestart:重启服务器\n\tClear:清除控制台内容\n\tReload:重新载入配置\n\tShrink:地图缩小\n\tBCo:地图边界碰撞\n\tBCB:边界碰撞反弹\n\tOt:地图外质量减小\n\tEc:吐球碰撞\n\tPd:玩家掉线删除\n\tcn (number):使用指定编号的碰撞算法\n\tPlayerlist:玩家id列表\n\tKill (id):使指定id的细胞死亡\n\tVirus (id):在指定id的所有玩家细胞上生成病毒\n\tMove (id) (x) （y）;移动指定玩家到指定坐标\n\tFussion (id)使指定玩家融合\n\tName (id) (Name):修改指定玩家的名称\n\tInform (contents):在客户端聊天框发送一个系统消息\n\tRestart:重启或清空地图并重载\n\tplayer (id):查看玩家信息\n\tkick (id):踢出玩家\n\t(指令不区分大小写)");
+                       "Stop:关闭服务器\n\tRestart:重启服务器\n\tClear:清除控制台内容\n\tReload:重新载入配置\n\tShrink:地图缩小\n\tBCo:地图边界碰撞\n\tBCB:边界碰撞反弹\n\tOt:地图外质量减小\n\tPopsplit:开启或者关闭Popsplit\n\tEc:吐球碰撞\n\tPd:玩家掉线删除\n\tcn (number):使用指定编号的碰撞算法\n\tStartSize(Size):玩家初始质量\n\tPlayerlist:玩家id列表\n\tKill (id):使指定id的细胞死亡\n\tVirus (id):在指定id的所有玩家细胞上生成病毒\n\tMove (id) (x) （y）;移动指定玩家到指定坐标\n\tFussion (id)使指定玩家融合\n\tName (id) (Name):修改指定玩家的名称\n\tInform (contents):在客户端聊天框发送一个系统消息\n\tRestart:重启或清空地图并重载\n\tplayer (id):查看玩家信息\n\tkick (id):踢出玩家\n\t(指令不区分大小写)");
+                        break;
+                    }
+                case "popsplit":
+                    {
+                        ServerConfig.PopSplit = !ServerConfig.PopSplit;
                         break;
                     }
                 case "clear":
