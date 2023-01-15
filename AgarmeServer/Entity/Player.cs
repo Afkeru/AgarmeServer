@@ -74,7 +74,7 @@ namespace AgarmeServer.Entity
             client.SplitCount += 1;
             client.ViewX += x;
             client.ViewY += y;
-            client.Mass += Size;
+            client.Mass += Size; 
 
             //横向纵向运动
             CountInertia(ref x, ref y, ref transverse, ref longitudinal, ServerConfig.PlayerSplitSpeedRate);
